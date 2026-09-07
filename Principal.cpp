@@ -2,6 +2,7 @@
 #include<iostream>
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
+#include <vector>
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "void main()\n"
@@ -13,7 +14,9 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
 "void main()\n"
 "{\n"
-"    FragColor = vec4(0.5f, 0.5f, 0.2f, 1.0f);\n"
+"    FragColor = vec4(184.2/255.0f, 134.0/255.0f, 11.0/255.0f, 1.0f);\n"
+//Acuerdate que el color es en RGB 
+//cabe aclaear que el rango solo va de 0.0 a 1.0, por lo que si queremos un color mas intenso debemos dividirlo entre 255.0f
 "}\n";
 
 int main()
@@ -24,11 +27,63 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	GLfloat vertices[] = {
-		-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, //primer vertice 
-		 0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,  //segundo vertice
-		 0.0f,  0.5f * float(sqrt(3)) * 2 / 3, 0.0f   //tercer vertice  
-	};
+	std::vector<float> vertices;
+	//y alamacenamos los vertices con este de arriba, creciendo automaticamente con el ciclo for
+	const int Filas = 5;
+	const int Columnas = 5;
+	float espaciado = 0.1f;//aqui agregamos un pequeño espacio para que los cuadrso bo esten tan pegados
+	float ancho = 2.0f / Columnas - espaciado;
+	//el ancho seria el ancho de cada cuadrado
+	//el alto seria el alto de cada cuadrado
+	float alto = 2.0f / Filas - espaciado;
+	for (int fila = 0; fila < Filas; fila++)
+	{
+		for (int columna = 0; columna < Columnas; columna++)
+		{
+			float x1 = -1.0f + columna * ancho;
+			float y1 = -1.0f + fila * alto;
+			float x2 = x1 + ancho;
+			float y2 = y1 + alto;
+			//primer triangulo
+			vertices.push_back(x1);
+			vertices.push_back(y1);
+			vertices.push_back(0.0f);
+			vertices.push_back(x2);
+			vertices.push_back(y1);
+			vertices.push_back(0.0f);
+			vertices.push_back(x2);
+			vertices.push_back(y2);
+			vertices.push_back(0.0f);
+			//segundo triangulo
+			vertices.push_back(x1);
+			vertices.push_back(y1);
+			vertices.push_back(0.0f);
+			vertices.push_back(x2);
+			vertices.push_back(y2);
+			vertices.push_back(0.0f);
+			vertices.push_back(x1);
+			vertices.push_back(y2);
+			vertices.push_back(0.0f);
+			//push Back significa que vamos a agregar este numero al final del vector, y el vector se va a redimensionar automaticamente para que quepa el nuevo elemento
+
+		}
+
+	}
+	//este es para el cuadrado
+	//GLfloat vertices[] = {
+		//-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, //primer vertice 
+		// 0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f,  //segundo vertice
+		//0.0f,  0.5f * float(sqrt(3)) * 2 / 3, 0.0f   //tercer vertice
+		// eso es para generar un triangulo equilatero
+		//-0.5f, -0.5f, 0.0f, //primer vertice
+		//0.5f, -0.5f, 0.0f, //segundo vertice
+		//0.5f,0.5f, 0.0f, //tercer vertice
+		//para el primer triangulo invertido
+		//0.5f, 0.5f, 0.0f, //primer vertice para el triangulo invertido
+		//-0.5, 0.5f, 0.0f, //el segundo vertice para el triangulo invertido
+		//-0.5F, -0.5f, 0.0f,//el tercer vertice para el triangulo invertido
+		//Y este para el segundo triangulo invertido
+	//};
 	//(aqui estamos creando una matriz de datos que va a contener los vertices de nuestro triangulo, cada 3 numeros representan un vertice, el primer numero es la coordenada x, el segundo es la coordenada y y el tercero es la coordenada z)
 
 	GLFWwindow* window = glfwCreateWindow(800, 800, "LearnOpenGL", NULL, NULL);
@@ -70,16 +125,18 @@ int main()
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);//el glBindBuffer es el que le dice a opengl que vamos a usar ese buffer para dibujar, y el GL_ARRAY_BUFFER es el tipo de buffer que vamos a usar, en este caso un buffer de vertices
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);//con esta funcion se alamacena los vertices en el VBO, y el sizeof(vertices) es el tamaño del buffer, y el vertices es el puntero a los datos del buffer, y el GL_STATIC_DRAW es el tipo de uso del buffer, en este caso un buffer estatico es el que se me va modificar solo una vez y se va a usar muchas veces veces)
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);//con esta funcion se alamacena los vertices en el VBO, y el sizeof(vertices) es el tamaño del buffer, y el vertices es el puntero a los datos del buffer, y el GL_STATIC_DRAW es el tipo de uso del buffer, en este caso un buffer estatico es el que se me va modificar solo una vez y se va a usar muchas veces veces)
+	//y ten encuenta que el vertices.data es que da los datos del vector
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);//con esta funcion le decimos a opengl como interpretar los datos del VBO, el primer parametro es el indice del atributo, el segundo es el numero de componentes del atributo, el tercero es el tipo de dato del atributo, el cuarto es si queremos normalizar los datos o no, el quinto es el tamaño del stride, y el sexto es el offset del atributo
 	//es una forma de comunicarse con un shader de vertices con el exterior
-	glDisableVertexAttribArray(0);
+	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);//con esta funcion le decimos a opengl que ya no vamos a usar el VBO, y el 0 es el id del buffer que queremos desactivar
 	glBindVertexArray(0);//con esta funcion le decimos a opengl que ya no vamos a usar el VAO, y el 0 es el id del vertex array que queremos desactivar
 
 	//el ultimo numero es la transparencia, 1.0f es opaco y 0.0f es transparente
-	glClearColor(0.02f, 0.3f, 0.3f, 1.0f);
+	glClearColor(55.0f, 0.0f, 0.0f, 1.0f);
+	//elClearColor sirve para definir el color de fondo de la ventana, y el glClear sirve para limpiar la ventana con ese color de fondo
 	glClear(GL_COLOR_BUFFER_BIT);
 	glfwSwapBuffers(window);
 
@@ -90,7 +147,8 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);//enlazamos el vao
-		glDrawArrays(GL_TRIANGLES, 0, 3);//dibujamos el triangulo, el primer parametro es el tipo de primitiva que vamos a dibujar, el segundo es el indice del primer vertice que vamos a dibujar, y el tercero es el numero de vertices que vamos a dibujar)
+		glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);//dibujamos el triangulo, el primer parametro es el tipo de primitiva que vamos a dibujar, el segundo es el indice del primer vertice que vamos a dibujar, y el tercero es el numero de vertices que vamos a dibujar)
+		//en este caso el vertices.size()/3 es porque cada vertice tiene 3 componentes, x, y, z, y el vertices.size() es el numero total de componentes, por lo que si dividimos entre 3 obtenemos el numero de vertices
 		glfwSwapBuffers(window);
 		// funcion que permite que procese todos los eventos extraidos, como que la ventana cambie de tamaño, que se cierre, etc.
 		glfwPollEvents();
