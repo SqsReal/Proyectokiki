@@ -18,6 +18,40 @@ const char* fragmentShaderSource = "#version 330 core\n"
 //Acuerdate que el color es en RGB 
 //cabe aclaear que el rango solo va de 0.0 a 1.0, por lo que si queremos un color mas intenso debemos dividirlo entre 255.0f
 "}\n";
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+void Bresenham(int x1, int y1, int x2, int y2, std::vector<float>& vertices)
+{
+	int dx = abs(x2 - x1);
+	int dy = abs(y2 - y1);
+	int sx = (x1 < x2) ? 1 : -1;
+	int sy = (y1 < y2) ? 1 : -1;
+	int error = dx - dy;
+	while (true)
+	{
+		// Convertimos el pixel a coordenadas de OpenGL
+		float x = (2.0f * x1 / 799.0f) - 1.0f;
+		float y = 1.0f - (2.0f * y1 / 799.0f);
+		vertices.push_back(x);
+		vertices.push_back(y);
+		vertices.push_back(0.0f);
+		if (x1 == x2 && y1 == y2)
+			break;
+		int error2 = 2 * error;
+		if (error2 > -dy)
+		{
+			error -= dy;
+			x1 += sx;
+		}
+		if (error2 < dx)
+		{
+			error += dx;
+			y1 += sy;
+		}
+	}
+}
 
 int main()
 {
@@ -29,8 +63,8 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	std::vector<float> vertices;
 	//y alamacenamos los vertices con este de arriba, creciendo automaticamente con el ciclo for
-	const int Filas = 5;
-	const int Columnas = 5;
+	const int Filas = 2;
+	const int Columnas = 2;
 	float espaciado = 0.1f;//aqui agregamos un pequeño espacio para que los cuadrso bo esten tan pegados
 	float ancho = 2.0f / Columnas - espaciado;
 	//el ancho seria el ancho de cada cuadrado
@@ -38,37 +72,26 @@ int main()
 	float alto = 2.0f / Filas - espaciado;
 	for (int fila = 0; fila < Filas; fila++)
 	{
+		// Posicion Y de cada linea horizontal
+		float y = -1.0f + fila * alto;
+
+		// Convertimos la coordenada Y de OpenGL a pixel
+		int yPixel = (int)((1.0f - y) * 799.0f / 2.0f);
+
+		// Dibujamos la linea horizontal completa
+		Bresenham(0,yPixel,799,yPixel,vertices);
+	}
 		for (int columna = 0; columna < Columnas; columna++)
 		{
-			float x1 = -1.0f + columna * ancho;
-			float y1 = -1.0f + fila * alto;
-			float x2 = x1 + ancho;
-			float y2 = y1 + alto;
-			//primer triangulo
-			vertices.push_back(x1);
-			vertices.push_back(y1);
-			vertices.push_back(0.0f);
-			vertices.push_back(x2);
-			vertices.push_back(y1);
-			vertices.push_back(0.0f);
-			vertices.push_back(x2);
-			vertices.push_back(y2);
-			vertices.push_back(0.0f);
-			//segundo triangulo
-			vertices.push_back(x1);
-			vertices.push_back(y1);
-			vertices.push_back(0.0f);
-			vertices.push_back(x2);
-			vertices.push_back(y2);
-			vertices.push_back(0.0f);
-			vertices.push_back(x1);
-			vertices.push_back(y2);
-			vertices.push_back(0.0f);
-			//push Back significa que vamos a agregar este numero al final del vector, y el vector se va a redimensionar automaticamente para que quepa el nuevo elemento
+			// Posicion X de cada linea vertical
+			float x = -1.0f + columna * ancho;
 
+		// Convertimos la coordenada X de OpenGL a pixel
+		int xPixel = (int)((x + 1.0f) * 799.0f / 2.0f);
+
+		// Dibujamos la linea vertical completa
+		Bresenham(xPixel,0,xPixel,799,vertices);
 		}
-
-	}
 	//este es para el cuadrado
 	//GLfloat vertices[] = {
 		//-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, //primer vertice 
@@ -100,6 +123,7 @@ int main()
 
 	//esto indica de donde a donde queremos que open gl se renderize
 	glViewport(0, 0, 800, 800);
+	//shaders
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
@@ -117,12 +141,16 @@ int main()
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 	//(los eliminamos porque ya estan en el programa y no los necesitamos mas, ademas de que nos ahorramos memoria)
-
+	//El VBO Y VBA
 	//el VBO es un objeto que contiene los datos de los vertices, es decir, la posicion de cada vertice, el color de cada vertice, etc. y se usa para dibujar los objetos en la pantalla
+	//el VAO es un objeto que contiene la configuracion de los atributos de los vertices, es decir, como se van a interpretar los datos del VBO, y se usa para dibujar los objetos en la pantalla
 	GLuint VBO, VAO;
 	glGenBuffers(1, &VBO);
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
+	//el glGenBuffers es el que genera el buffer, y el 1 es el numero de buffers que queremos generar(es el que le dice a opengl que vamos a usar ese buffer para dibujar)
+	//y el GL_ARRAY_BUFFER es el tipo de buffer que vamos a usar,
+	//en este caso un buffer de vertices
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);//el glBindBuffer es el que le dice a opengl que vamos a usar ese buffer para dibujar, y el GL_ARRAY_BUFFER es el tipo de buffer que vamos a usar, en este caso un buffer de vertices
 
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);//con esta funcion se alamacena los vertices en el VBO, y el sizeof(vertices) es el tamaño del buffer, y el vertices es el puntero a los datos del buffer, y el GL_STATIC_DRAW es el tipo de uso del buffer, en este caso un buffer estatico es el que se me va modificar solo una vez y se va a usar muchas veces veces)
@@ -141,12 +169,14 @@ int main()
 	glfwSwapBuffers(window);
 
 
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.02f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);//enlazamos el vao
+		glPointSize(2.0f);
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);//dibujamos el triangulo, el primer parametro es el tipo de primitiva que vamos a dibujar, el segundo es el indice del primer vertice que vamos a dibujar, y el tercero es el numero de vertices que vamos a dibujar)
 		//en este caso el vertices.size()/3 es porque cada vertice tiene 3 componentes, x, y, z, y el vertices.size() es el numero total de componentes, por lo que si dividimos entre 3 obtenemos el numero de vertices
 		glfwSwapBuffers(window);
