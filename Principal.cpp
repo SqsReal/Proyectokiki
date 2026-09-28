@@ -4,6 +4,7 @@
 #include<glad/glad.h>
 #include<GLFW/glfw3.h>
 #include <vector>
+#include <cmath>
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "void main()\n"
@@ -19,9 +20,76 @@ const char* fragmentShaderSource = "#version 330 core\n"
 //Acuerdate que el color es en RGB 
 //cabe aclaear que el rango solo va de 0.0 a 1.0, por lo que si queremos un color mas intenso debemos dividirlo entre 255.0f
 "}\n";
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+std::vector<float> vertices;
+
+// VBO Y VAO
+GLuint VBO, VAO;
+
+// Variables para los clicks
+bool primerClick = true;
+
+int ultimoX = 0;
+int ultimoY = 0;
+
+
+// Declaramos Bresenham antes de utilizarla
+void Bresenham(int x1, int y1, int x2, int y2, std::vector<float>& vertices);
+
+void actualizarVBO()
 {
-    glViewport(0, 0, width, height);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glBufferData(GL_ARRAY_BUFFER,vertices.size() * sizeof(float),vertices.data(),GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		double xpos, ypos;
+
+		// Obtenemos la posicion del mouse
+		glfwGetCursorPos(window, &xpos, &ypos);
+
+		int x = (int)xpos;
+		int y = (int)ypos;
+
+
+		// Si es el primer click solamente guardamos el punto
+		if (primerClick)
+		{
+			ultimoX = x;
+			ultimoY = y;
+
+			primerClick = false;
+
+			std::cout << "Primer punto: ("
+				<< x << ", " << y << ")" << std::endl;
+		}
+
+
+		// Si ya teniamos un punto anterior
+		else
+		{
+			// Dibujamos una linea desde el punto anterior
+			// hasta el nuevo punto
+			Bresenham(ultimoX, ultimoY, x, y, vertices);
+
+			// Actualizamos el VBO para que OpenGL
+			// conozca los nuevos vertices
+			actualizarVBO();
+
+			std::cout << "Linea: ("
+				<< ultimoX << ", " << ultimoY
+				<< ") -> ("
+				<< x << ", " << y << ")" << std::endl;
+
+
+			// El nuevo punto se convierte en el punto anterior
+			ultimoX = x;
+			ultimoY = y;
+		}
+	}
 }
 void Bresenham(int x1, int y1, int x2, int y2, std::vector<float>& vertices)
 {
@@ -62,37 +130,39 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	std::vector<float> vertices;
+	//TODO este codigo que puse en comentarios es para
+	// generar la grilla automaticamente
+	//std::vector<float> vertices;
 	//y alamacenamos los vertices con este de arriba, creciendo automaticamente con el ciclo for
-	const int Filas = 2;
-	const int Columnas = 2;
-	float espaciado = 0.1f;//aqui agregamos un pequeño espacio para que los cuadrso bo esten tan pegados
-	float ancho = 2.0f / Columnas - espaciado;
+	//const int Filas = 2;
+	//const int Columnas = 2;
+	//float espaciado = 0.1f;//aqui agregamos un pequeño espacio para que los cuadrso bo esten tan pegados
+	//float ancho = 2.0f / Columnas - espaciado;
 	//el ancho seria el ancho de cada cuadrado
 	//el alto seria el alto de cada cuadrado
-	float alto = 2.0f / Filas - espaciado;
-	for (int fila = 0; fila < Filas; fila++)
-	{
+	//float alto = 2.0f / Filas - espaciado;
+	//for (int fila = 0; fila < Filas; fila++)
+	//{
 		// Posicion Y de cada linea horizontal
-		float y = -1.0f + fila * alto;
+		//float y = -1.0f + fila * alto;
 
 		// Convertimos la coordenada Y de OpenGL a pixel
-		int yPixel = (int)((1.0f - y) * 799.0f / 2.0f);
+		//int yPixel = (int)((1.0f - y) * 799.0f / 2.0f);
 
 		// Dibujamos la linea horizontal completa
-		Bresenham(0,yPixel,799,yPixel,vertices);
-	}
-		for (int columna = 0; columna < Columnas; columna++)
-		{
-			// Posicion X de cada linea vertical
-			float x = -1.0f + columna * ancho;
+		//Bresenham(0, yPixel, 799, yPixel, vertices);
+	//}
+	//for (int columna = 0; columna < Columnas; columna++)
+	//{
+		// Posicion X de cada linea vertical
+		//float x = -1.0f + columna * ancho;
 
 		// Convertimos la coordenada X de OpenGL a pixel
-		int xPixel = (int)((x + 1.0f) * 799.0f / 2.0f);
+		//int xPixel = (int)((x + 1.0f) * 799.0f / 2.0f);
 
 		// Dibujamos la linea vertical completa
-		Bresenham(xPixel,0,xPixel,799,vertices);
-		}
+		//Bresenham(xPixel, 0, xPixel, 799, vertices);
+	//}
 	//este es para el cuadrado
 	//GLfloat vertices[] = {
 		//-0.5f, -0.5f * float(sqrt(3)) / 3, 0.0f, //primer vertice 
@@ -117,6 +187,8 @@ int main()
 		glfwTerminate();
 		return -1;
 	}
+	// Funcion que detecta los clicks del mouse
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	//introduce la ventana que creamos como contexto actual de opengl, es decir, que todo lo que hagamos a partir de ahora se va a dibujar en esa ventana
 	glfwMakeContextCurrent(window);
 
@@ -124,6 +196,7 @@ int main()
 
 	//esto indica de donde a donde queremos que open gl se renderize
 	glViewport(0, 0, 800, 800);
+
 	//shaders
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -145,7 +218,7 @@ int main()
 	//El VBO Y VBA
 	//el VBO es un objeto que contiene los datos de los vertices, es decir, la posicion de cada vertice, el color de cada vertice, etc. y se usa para dibujar los objetos en la pantalla
 	//el VAO es un objeto que contiene la configuracion de los atributos de los vertices, es decir, como se van a interpretar los datos del VBO, y se usa para dibujar los objetos en la pantalla
-	GLuint VBO, VAO;
+
 	glGenBuffers(1, &VBO);
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
@@ -154,7 +227,9 @@ int main()
 	//en este caso un buffer de vertices
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);//el glBindBuffer es el que le dice a opengl que vamos a usar ese buffer para dibujar, y el GL_ARRAY_BUFFER es el tipo de buffer que vamos a usar, en este caso un buffer de vertices
 
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);//con esta funcion se alamacena los vertices en el VBO, y el sizeof(vertices) es el tamaño del buffer, y el vertices es el puntero a los datos del buffer, y el GL_STATIC_DRAW es el tipo de uso del buffer, en este caso un buffer estatico es el que se me va modificar solo una vez y se va a usar muchas veces veces)
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);//con esta funcion se alamacena los vertices en el VBO, y el sizeof(vertices) es el tamaño del buffer, y el vertices es el puntero a los datos del buffer, 
+	//y el GL_DYNAMIC_DRAW porque ahora los vertices van a cambiar
+	//cada vez que hagamos click
 	//y ten encuenta que el vertices.data es que da los datos del vector
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);//con esta funcion le decimos a opengl como interpretar los datos del VBO, el primer parametro es el indice del atributo, el segundo es el numero de componentes del atributo, el tercero es el tipo de dato del atributo, el cuarto es si queremos normalizar los datos o no, el quinto es el tamaño del stride, y el sexto es el offset del atributo
@@ -178,8 +253,9 @@ int main()
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);//enlazamos el vao
 		glPointSize(2.0f);
-		glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);//dibujamos el triangulo, el primer parametro es el tipo de primitiva que vamos a dibujar, el segundo es el indice del primer vertice que vamos a dibujar, y el tercero es el numero de vertices que vamos a dibujar)
+		glDrawArrays(GL_POINTS, 0, vertices.size() / 3);//dibujamos el triangulo, el primer parametro es el tipo de primitiva que vamos a dibujar, el segundo es el indice del primer vertice que vamos a dibujar, y el tercero es el numero de vertices que vamos a dibujar)
 		//en este caso el vertices.size()/3 es porque cada vertice tiene 3 componentes, x, y, z, y el vertices.size() es el numero total de componentes, por lo que si dividimos entre 3 obtenemos el numero de vertices
+		//AQUI YA dibujamos los vertices generados por bresenham
 		glfwSwapBuffers(window);
 		// funcion que permite que procese todos los eventos extraidos, como que la ventana cambie de tamaño, que se cierre, etc.
 		glfwPollEvents();
