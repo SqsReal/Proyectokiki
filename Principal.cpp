@@ -21,7 +21,7 @@ const char* fragmentShaderSource = "#version 330 core\n"
 //cabe aclaear que el rango solo va de 0.0 a 1.0, por lo que si queremos un color mas intenso debemos dividirlo entre 255.0f
 "}\n";
 std::vector<float> vertices;
-
+//lo pusimos aqui para que sea global y asi poder acceder a el desde cualquier funcion
 // VBO Y VAO
 GLuint VBO, VAO;
 
